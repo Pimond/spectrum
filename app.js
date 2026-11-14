@@ -8,11 +8,11 @@
 
   /* ---------- prefs ---------- */
   let prefs = {};
-  try { prefs = JSON.parse(localStorage.getItem('spectrum.prefs') || '{}') || {}; } catch (e) {}
+  try { prefs = JSON.parse(localStorage.getItem('spectrum.v2') || '{}') || {}; } catch (e) {}
   const save = () => {
     try {
-      localStorage.setItem('spectrum.prefs', JSON.stringify({
-        mode: S.mode, log: S.view.log, fft: S.fftSize, smooth: S.smooth, hold: S.peakHold, lut: S.lutName,
+      localStorage.setItem('spectrum.v2', JSON.stringify({
+        mode: S.mode, log: S.view.log, fft: S.fftSize, smooth: S.smooth, hold: S.peakHold, lut: S.lutName, dark: S.dark,
       }));
     } catch (e) {}
   };
@@ -20,12 +20,13 @@
   /* ---------- state ---------- */
   const GRID = 2048, ROWS = 300;
   const S = {
-    mode: MODES.includes(prefs.mode) ? prefs.mode : 'spectrum',
+    mode: MODES.includes(prefs.mode) ? prefs.mode : '3d',
+    dark: prefs.dark === true, theme: null,
     view: { fMin: 20, fMax: 20000, log: prefs.log !== false, dbMin: -100, dbMax: 0 },
     fftSize: [1024, 2048, 4096, 8192, 16384, 32768].includes(prefs.fft) ? prefs.fft : 4096,
     smooth: typeof prefs.smooth === 'number' ? SA.clamp(prefs.smooth, 0, 0.95) : 0.7,
     peakHold: !!prefs.hold,
-    lutName: SA.MAPS[prefs.lut] ? prefs.lut : 'aurora',
+    lutName: SA.MAPS[prefs.lut] ? prefs.lut : 'ember',
     lut8: null, lut32: null,
     sampleRate: 48000, nyq: 24000, binHz: 48000 / 4096,
     spec: null, peak: null, pw: null, time: null,
@@ -41,8 +42,22 @@
 
   function setLut(name) {
     S.lutName = name;
-    S.lut8 = SA.buildLut(name);
+    S.lut8 = SA.buildLut(name, S.dark, S.theme.bg);
     S.lut32 = new Uint32Array(S.lut8.buffer);
+  }
+  function applyTheme() {
+    const root = document.documentElement;
+    root.dataset.theme = S.dark ? 'dark' : 'light';
+    const cs = getComputedStyle(root), v = (n) => cs.getPropertyValue(n).trim();
+    const bg = v('--bg'), ink = v('--ink'), accent = v('--accent'), i = SA.hex(ink);
+    S.theme = {
+      id: S.dark ? 'dark' : 'light', bg, ink, accent, muted: v('--muted'),
+      grid: `rgba(${i[0]},${i[1]},${i[2]},0.09)`, line2: `rgba(${i[0]},${i[1]},${i[2]},0.28)`,
+      bgF: SA.hex(bg).map((c) => c / 255), inkF: i.map((c) => c / 255), accentRGB: SA.hex(accent),
+    };
+    setLut(S.lutName);
+    const m = document.querySelector('meta[name="theme-color"]');
+    if (m) m.content = bg;
   }
   function alloc() {
     const n = S.fftSize / 2;
@@ -65,7 +80,7 @@
     if (first || S.view.fMax > S.nyq) S.view.fMax = Math.min(20000, S.nyq);
     if (S.view.fMin >= S.view.fMax) S.view.fMin = S.view.log ? 20 : 0;
   }
-  setLut(S.lutName); alloc(); rateChanged(48000);
+  applyTheme(); alloc(); rateChanged(48000);
 
   /* ---------- audio ---------- */
   let ctx = null, analyser = null, mute = null, src = null;
@@ -163,6 +178,7 @@
       S.source = kind; S.running = true;
       $('intro').hidden = true;
       closeSheet();
+      if (S.mode === '3d') hint3d();
     } catch (e) {
       toast(e.message || 'Something went wrong.', 4500);
       if (!S.source) $('intro').hidden = false;
@@ -193,7 +209,7 @@
   function toggleZero() {
     if (S.zero) return;
     if (S.noise) { clearZero(); toast('Background restored'); return; }
-    if (!S.running) { toast(S.source ? 'Resume first, then zero' : 'Start a source first'); return; }
+    if (!S.running) { toast('Resume first, then zero the background.'); return; }
     S.zero = { t0: performance.now(), acc: new Float64Array(S.fftSize / 2), n: 0 };
     $('zeroOverlay').hidden = false;
     ui();
@@ -209,7 +225,7 @@
     S.noise = noise; S.zero = null;
     S.peak.fill(SA.DB_FLOOR); S.bandPeak.fill(SA.DB_FLOOR);
     $('zeroOverlay').hidden = true;
-    toast('Background removed. Tap Zero again to bring it back.', 3200);
+    toast('Background removed from the graphs.', 2600);
     ui();
   }
 
@@ -295,7 +311,7 @@
   function snapshot() {
     const c = document.createElement('canvas'); c.width = c2d.width; c.height = c2d.height;
     const x = c.getContext('2d');
-    x.fillStyle = '#0a0c10'; x.fillRect(0, 0, c.width, c.height);
+    x.fillStyle = S.theme.bg; x.fillRect(0, 0, c.width, c.height);
     if (S.mode === '3d') x.drawImage(cgl, 0, 0);
     x.drawImage(c2d, 0, 0);
     c.toBlob((blob) => {
@@ -436,20 +452,27 @@
   function ui() {
     document.querySelectorAll('#tabs button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.view === S.mode)));
     cgl.style.display = S.mode === '3d' ? 'block' : 'none';
-    $('playLabel').textContent = !S.source ? 'Start' : S.running ? 'Pause' : 'Resume';
-    $('btnPlay').classList.toggle('paused', !!S.source && !S.running);
-    $('icoPlay').style.display = S.running ? 'none' : ''; $('icoPause').style.display = S.running ? '' : 'none';
+    $('bar').hidden = !S.source;
+    $('btnPlay').textContent = S.running ? 'Pause' : 'Resume';
     const zb = $('btnZero');
-    zb.classList.toggle('on', !!S.noise); zb.classList.toggle('busy', !!S.zero);
+    zb.classList.toggle('on', !!S.noise); zb.disabled = !!S.zero;
     zb.setAttribute('aria-pressed', String(!!S.noise));
-    $('zeroLabel').textContent = S.zero ? 'Listening…' : S.noise ? 'Zeroed' : 'Zero';
+    zb.textContent = S.zero ? 'Listening…' : S.noise ? 'Undo zero' : 'Zero background';
+    const tb = $('btnTheme');
+    tb.setAttribute('aria-pressed', String(S.dark));
+    tb.setAttribute('aria-label', S.dark ? 'Switch to light mode' : 'Switch to dark mode');
     seg('source', S.source || ''); seg('scale', S.view.log ? 'log' : 'lin'); seg('lut', S.lutName);
     $('fft').value = String(S.fftSize); $('smooth').value = String(S.smooth); $('hold').checked = S.peakHold;
     $('fftHint').textContent = '≈ ' + (S.binHz >= 10 ? S.binHz.toFixed(0) : S.binHz.toFixed(1)) + ' Hz per step';
   }
+  function hint3d() {
+    if (hint3d.done) return;
+    hint3d.done = true;
+    toast('Drag to rotate. Pinch or scroll to move closer.', 3200);
+  }
   function setMode(m) {
     S.mode = m; S.cursor = null;
-    if (m === '3d' && !setMode.hinted) { setMode.hinted = true; toast('Drag to rotate, pinch or scroll to move closer', 3000); }
+    if (m === '3d' && S.source) hint3d();
     save(); ui();
   }
   function openSheet() { $('sheet').hidden = false; $('backdrop').hidden = false; requestAnimationFrame(() => document.body.classList.add('sheet-open')); }
@@ -462,6 +485,7 @@
   $('btnPlay').addEventListener('click', togglePlay);
   $('btnZero').addEventListener('click', toggleZero);
   $('btnSettings').addEventListener('click', openSheet);
+  $('btnTheme').addEventListener('click', () => { S.dark = !S.dark; applyTheme(); save(); ui(); });
   $('sheetClose').addEventListener('click', closeSheet);
   $('backdrop').addEventListener('click', closeSheet);
 

@@ -1,53 +1,83 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0a0c10">
-<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#f4f3ef">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="description" content="Live audio spectrum analyzer: spectrum, bars, waterfall, scope and 3D, with background-noise zeroing. Runs entirely in your browser.">
-<title>Spectrum — live audio analyzer</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a0c10'/%3E%3Cg fill='%235ef0c1'%3E%3Crect x='6' y='16' width='3' height='10' rx='1.5'/%3E%3Crect x='11.5' y='9' width='3' height='17' rx='1.5'/%3E%3Crect x='17' y='5' width='3' height='21' rx='1.5'/%3E%3Crect x='22.5' y='13' width='3' height='13' rx='1.5'/%3E%3C/g%3E%3C/svg%3E">
+<meta name="description" content="Live audio spectrum analyzer with spectrum, bars, waterfall, scope and 3D views, plus background-noise zeroing. Runs in the browser.">
+<title>Audio spectrum analyzer</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%23f4f3ef'/%3E%3Cpath d='M3 22h5l3-13 4 17 4-21 3 17h7' fill='none' stroke='%23c63a17' stroke-width='2.4' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>try{if(JSON.parse(localStorage.getItem('spectrum.v2')||'{}').dark===true)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
 :root{
-  --bg:#0a0c10; --panel:#11151b; --panel2:#181d26; --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14);
-  --text:#e9edf2; --muted:#8a95a5; --accent:#5ef0c1; --accent-ink:#04221a; --warm:#ff8a3d;
-  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --bg:#f4f3ef; --ink:#16181a; --muted:#676b6f;
+  --line:rgba(22,24,26,.13); --line2:rgba(22,24,26,.28); --hover:rgba(22,24,26,.06); --veil:rgba(244,243,239,.84);
+  --accent:#c63a17; --accent-ink:#ffffff;
+  --r-sm:4px; --r-md:6px; --r-lg:8px; --ctl:44px;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   --st:env(safe-area-inset-top,0px); --sb:env(safe-area-inset-bottom,0px); --sl:env(safe-area-inset-left,0px); --sr:env(safe-area-inset-right,0px);
+  --edge:16px;
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --bg:#101112; --ink:#ecebe7; --muted:#8f9194;
+  --line:rgba(236,235,231,.13); --line2:rgba(236,235,231,.3); --hover:rgba(236,235,231,.08); --veil:rgba(16,17,18,.84);
+  --accent:#ff6a3d; --accent-ink:#1c0a04;
+  color-scheme:dark;
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--sans);
+html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;
   -webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
 body{-webkit-user-select:none;user-select:none}
 button,select,input{font:inherit;color:inherit}
-button{cursor:pointer;border:0;background:none;padding:0;touch-action:manipulation}
+button{cursor:pointer;border:0;background:none;padding:0;touch-action:manipulation;border-radius:var(--r-md)}
 button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* one button pair */
+.btn{height:var(--ctl);padding:0 18px;border:1px solid var(--line2);font-weight:500;white-space:nowrap;
+  transition:background-color .12s,transform .08s}
+.btn:active{transform:translateY(1px)}
+.btn--primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.btn:disabled{color:var(--muted);cursor:default}
+.icon-btn{width:var(--ctl);height:var(--ctl);display:grid;place-items:center;flex:none;transition:background-color .12s}
+.icon-btn svg{width:20px;height:20px}
+@media (hover:hover){
+  .btn:not(.btn--primary):not(.on):not(:disabled):hover,.icon-btn:hover{background:var(--hover)}
+  .btn--primary:hover{filter:brightness(1.07)}
+}
 
 #app{position:fixed;inset:0;display:flex;flex-direction:column;height:100vh;height:100dvh;
   padding:var(--st) var(--sr) 0 var(--sl)}
 
-/* header */
-header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:10px 16px 8px}
-.brand{display:flex;align-items:center;gap:9px;font-weight:650;letter-spacing:.01em;font-size:16px}
-.brand svg{width:22px;height:22px}
-.readout{margin-left:auto;display:flex;gap:14px;font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums}
-.readout div{display:flex;flex-direction:column;align-items:flex-end;line-height:1.15;min-width:0}
-.readout b{font-weight:600;white-space:nowrap}
-.readout small{color:var(--muted);font-family:var(--sans);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
-#readF{color:var(--accent)}
-#tabs{order:3;flex:1 0 100%;display:flex;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:3px;gap:2px}
-#tabs button{flex:1;min-width:0;height:34px;border-radius:9px;font-size:13px;font-weight:550;color:var(--muted);transition:background .15s,color .15s;white-space:nowrap}
-#tabs button[aria-selected="true"]{background:var(--panel2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line2)}
-@media (hover:hover){#tabs button:hover{color:var(--text)}}
-@media (max-width:420px){#tabs button{font-size:12.5px;letter-spacing:-.01em}}
+/* header: tabs, readout, theme */
+header{display:flex;flex-wrap:wrap;align-items:center;column-gap:20px;padding:6px var(--edge) 0;border-bottom:1px solid var(--line)}
+.readout{flex:1 1 0;overflow:hidden;display:flex;align-items:baseline;gap:16px;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap;min-width:0}
+.readout span{display:flex;align-items:baseline;gap:6px;font-size:13px}
+.readout b{font-weight:500}
+.readout small{font-family:var(--sans);font-size:12px;color:var(--muted)}
+.readout .main{font-size:21px;letter-spacing:-.01em}
+#btnTheme{margin-right:-10px}
+#tabs{order:3;flex:1 0 100%;display:flex;gap:4px;margin:0 -8px}
+#tabs button{flex:1;min-width:0;height:var(--ctl);border-radius:0;font-size:14px;color:var(--muted);font-weight:500;
+  box-shadow:inset 0 -2px 0 transparent;transition:color .12s,box-shadow .12s}
+#tabs button[aria-selected="true"]{color:var(--ink);box-shadow:inset 0 -2px 0 var(--ink)}
+@media (hover:hover){#tabs button:hover{color:var(--ink)}}
+@media (max-width:819px){.readout small{display:none}}
+@media (max-width:360px){.readout .lvl{display:none}}
 @media (min-width:820px){
-  header{flex-wrap:nowrap;padding:12px 20px 10px}
-  #tabs{order:0;flex:0 1 460px;margin-left:12px}
-  .readout{gap:22px;font-size:14px}
+  :root{--edge:24px}
+  header{flex-wrap:nowrap;padding-top:0}
+  #tabs{order:0;flex:0 0 auto;margin:0 0 0 -14px;gap:0}
+  #tabs button{flex:none;padding:0 14px;height:52px}
+  .readout{flex:0 1 auto;margin-left:auto;gap:24px}
+  #btnTheme{margin-left:0}
 }
 
 /* plot */
@@ -55,100 +85,77 @@ header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:10px
 #plot canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 #cgl{display:none}
 #c2d{touch-action:none;cursor:crosshair}
-#zoomer{position:absolute;right:calc(14px + var(--sr));bottom:34px;display:grid;grid-template-columns:auto 34px 34px;gap:4px;align-items:center;
-  padding:5px;border-radius:12px;background:rgba(17,21,27,.78);border:1px solid var(--line);
-  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
-#zoomer span{font-family:var(--mono);font-size:11px;color:var(--muted);padding:0 5px 0 4px;text-align:center}
-#zoomer button{height:34px;border-radius:8px;background:var(--panel2);font-size:18px;line-height:1;color:var(--text)}
-#zoomer button[data-z="r"]{grid-column:1/-1;height:28px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-#zoomer button:active{background:#232a36}
+#zoomer{position:absolute;right:calc(var(--edge) + var(--sr));top:12px;display:grid;grid-template-columns:auto 40px 40px;align-items:center;
+  background:var(--bg);border:1px solid var(--line2);border-radius:var(--r-md);overflow:hidden}
+#zoomer span{font-family:var(--mono);font-size:11px;color:var(--muted);padding:0 8px 0 10px}
+#zoomer button{height:38px;border-radius:0;font-size:18px;line-height:1;border-left:1px solid var(--line);transition:background-color .12s}
+#zoomer .y,#zoomer .y~button{border-top:1px solid var(--line)}
+#zoomer .y{align-self:stretch;display:flex;align-items:center}
+#zoomer button[data-z="r"]{grid-column:1/-1;height:34px;font-size:12px;color:var(--muted);border-left:0}
+#zoomer button:active{background:var(--hover)}
+@media (hover:hover){#zoomer button:hover{background:var(--hover);color:var(--ink)}}
 
-#intro{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;
-  background:radial-gradient(120% 90% at 50% 40%,rgba(10,12,16,.72),rgba(10,12,16,.94))}
-.card{width:min(380px,100%);background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;
-  box-shadow:0 24px 60px rgba(0,0,0,.5)}
-.card h1{margin:0 0 4px;font-size:19px;font-weight:650}
-.card p{margin:0 0 14px;color:var(--muted);font-size:13.5px;line-height:1.45}
-.card .src{display:flex;align-items:center;gap:13px;width:100%;text-align:left;padding:12px 14px;border-radius:13px;
-  background:var(--panel2);border:1px solid var(--line);margin-top:8px;transition:border-color .15s,transform .1s}
-.card .src:active{transform:scale(.985)}
-.card .src.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
-.card .src svg{width:22px;height:22px;flex:none}
-.card .src b{display:block;font-size:15px;font-weight:650}
-.card .src span{display:block;font-size:12.5px;opacity:.72;margin-top:1px}
-.card .fine{margin:14px 0 0;font-size:12px;text-align:center}
+#intro{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:var(--edge);background:var(--veil)}
+.pick{width:min(360px,100%);background:var(--bg);border:1px solid var(--line2);border-radius:var(--r-lg);padding:20px}
+.pick h1{margin:0 0 14px;font-size:18px;font-weight:600;letter-spacing:-.01em}
+.pick .btn{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;width:100%;height:auto;min-height:58px;
+  padding:9px 14px;margin-top:8px;text-align:left;white-space:normal}
+.pick .btn span{font-size:13px;font-weight:400;opacity:.8;margin-top:1px}
+.pick p{margin:14px 0 0;font-size:13px;color:var(--muted);line-height:1.45}
 
-#zeroOverlay{position:absolute;left:50%;top:14px;transform:translateX(-50%);width:min(320px,calc(100% - 32px));
-  background:rgba(17,21,27,.94);border:1px solid var(--line2);border-radius:14px;padding:12px 14px;pointer-events:none;
-  box-shadow:0 12px 30px rgba(0,0,0,.45)}
-#zeroOverlay .top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-size:14px;font-weight:600}
-#zeroOverlay .top b{font-family:var(--mono);color:var(--accent);font-size:18px}
-#zeroOverlay small{display:block;color:var(--muted);font-size:12px;margin:2px 0 9px}
-#zeroOverlay .track{height:4px;border-radius:2px;background:var(--panel2);overflow:hidden}
+#zeroOverlay{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);width:min(320px,calc(100% - 2*var(--edge)));
+  background:var(--bg);border:1px solid var(--line2);border-radius:var(--r-lg);padding:12px 14px;pointer-events:none}
+#zeroOverlay .top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-weight:600}
+#zeroOverlay .top b{font-family:var(--mono);font-weight:500;font-size:18px}
+#zeroOverlay small{display:block;color:var(--muted);font-size:13px;margin:2px 0 10px}
+#zeroOverlay .track{height:3px;background:var(--line)}
 #zeroBar{height:100%;background:var(--accent);transform-origin:left;transform:scaleX(0)}
 
-#toast{position:absolute;left:50%;top:14px;transform:translate(-50%,-10px);max-width:calc(100% - 32px);
-  background:rgba(24,29,38,.96);border:1px solid var(--line2);border-radius:999px;padding:9px 16px;font-size:13px;
-  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;text-align:center}
+#toast{position:absolute;left:50%;bottom:14px;transform:translate(-50%,6px);max-width:calc(100% - 2*var(--edge));
+  background:var(--ink);color:var(--bg);border-radius:var(--r-md);padding:9px 14px;font-size:13.5px;
+  opacity:0;pointer-events:none;transition:opacity .16s,transform .16s;text-align:center}
 #toast.on{opacity:1;transform:translate(-50%,0)}
 
-/* bottom bar */
-#bar{display:flex;gap:10px;padding:10px 16px calc(10px + var(--sb));border-top:1px solid var(--line);background:var(--panel)}
-#bar button{height:48px;border-radius:13px;display:flex;align-items:center;justify-content:center;gap:9px;font-size:15px;font-weight:600;
-  background:var(--panel2);border:1px solid var(--line);transition:background .15s,border-color .15s,color .15s}
-#bar svg{width:19px;height:19px;flex:none}
-#bar #btnPlay{flex:1.3;background:var(--accent);color:var(--accent-ink);border-color:transparent}
-#bar #btnPlay.paused{background:var(--warm);color:#2a1200}
-#btnZero{flex:1}
-#bar #btnZero.on{border-color:var(--accent);color:var(--accent);background:rgba(94,240,193,.1)}
-#bar #btnZero.busy{color:var(--muted)}
-#btnSettings{flex:0 0 52px}
-#bar button:active{filter:brightness(1.12)}
-@media (min-width:820px){#bar{justify-content:center;padding-left:20px;padding-right:20px}#bar #btnPlay,#bar #btnZero{flex:0 0 190px}}
+/* action bar */
+#bar{display:flex;gap:10px;padding:10px var(--edge) calc(10px + var(--sb));border-top:1px solid var(--line)}
+#bar .btn{flex:1;min-width:0;padding:0 10px}
+@media (min-width:820px){#bar{justify-content:flex-end}#bar .btn{flex:0 0 190px}}
 
-/* settings sheet */
-#backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);opacity:0;transition:opacity .2s;z-index:10}
-#sheet{position:fixed;z-index:11;left:0;right:0;bottom:0;max-height:86dvh;overflow:auto;-webkit-overflow-scrolling:touch;
-  background:var(--panel);border-top:1px solid var(--line2);border-radius:20px 20px 0 0;
-  padding:8px 18px calc(18px + var(--sb));transform:translateY(102%);transition:transform .22s cubic-bezier(.2,.8,.2,1)}
+/* settings */
+#backdrop{position:fixed;inset:0;background:rgba(0,0,0,.32);opacity:0;transition:opacity .18s;z-index:10}
+#sheet{position:fixed;z-index:11;left:0;right:0;bottom:0;max-height:88dvh;overflow:auto;-webkit-overflow-scrolling:touch;
+  background:var(--bg);border-top:1px solid var(--line2);border-radius:var(--r-lg) var(--r-lg) 0 0;
+  padding:6px var(--edge) calc(18px + var(--sb));transform:translateY(102%);transition:transform .2s cubic-bezier(.2,.8,.2,1)}
 .sheet-open #backdrop{opacity:1}
 .sheet-open #sheet{transform:none}
 @media (min-width:820px){
-  #sheet{left:auto;top:0;bottom:0;width:360px;max-height:none;border-radius:0;border-top:0;border-left:1px solid var(--line2);
-    padding-top:14px;transform:translateX(102%)}
+  #sheet{left:auto;top:0;bottom:0;width:380px;max-height:none;border-radius:0;border-top:0;border-left:1px solid var(--line2);transform:translateX(102%)}
 }
-.sheet-head{display:flex;align-items:center;justify-content:space-between;padding:8px 0 6px}
-.sheet-head h2{margin:0;font-size:17px;font-weight:650}
-.sheet-head button{width:36px;height:36px;border-radius:10px;background:var(--panel2);font-size:15px;color:var(--muted)}
-.row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;border-top:1px solid var(--line)}
-.row>label,.row>.lbl{font-size:14.5px}
-.row small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
-.seg{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:2px;gap:2px}
-.seg button{height:32px;padding:0 11px;border-radius:8px;font-size:13px;color:var(--muted);font-weight:550}
-.seg button[aria-pressed="true"]{background:var(--panel2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line2)}
-.row.stack{flex-direction:column;align-items:stretch;gap:9px}
-.row.stack .seg button{flex:1;padding:0 4px}
-select{height:36px;border-radius:10px;background:var(--bg);border:1px solid var(--line);padding:0 10px;font-size:14px}
-input[type=range]{width:150px;accent-color:var(--accent)}
-.switch{-webkit-appearance:none;appearance:none;width:46px;height:28px;border-radius:14px;background:var(--bg);border:1px solid var(--line2);
-  position:relative;cursor:pointer;transition:background .15s;margin:0;flex:none}
-.switch::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--muted);transition:transform .15s,background .15s}
-.switch:checked{background:rgba(94,240,193,.25);border-color:var(--accent)}
-.switch:checked::after{transform:translateX(18px);background:var(--accent)}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;padding:6px 0;margin-right:-10px}
+.sheet-head h2{margin:0;font-size:18px;font-weight:600;letter-spacing:-.01em}
+.row{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:60px;padding:8px 0;border-top:1px solid var(--line)}
+.row small{display:block;color:var(--muted);font-size:13px;margin-top:1px}
+.seg{display:flex;border:1px solid var(--line2);border-radius:var(--r-md);overflow:hidden;flex:none}
+.seg button{height:38px;padding:0 13px;border-radius:0;font-size:14px;font-weight:500;transition:background-color .12s}
+.seg button+button{border-left:1px solid var(--line2)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+@media (hover:hover){.seg button:not([aria-pressed="true"]):hover{background:var(--hover)}}
+select{height:38px;border-radius:var(--r-md);background:var(--bg);border:1px solid var(--line2);padding:0 8px;font-size:14px}
+input[type=range]{width:150px;accent-color:var(--ink)}
+.switch{-webkit-appearance:none;appearance:none;width:46px;height:26px;border-radius:13px;background:transparent;border:1px solid var(--line2);
+  position:relative;cursor:pointer;transition:background-color .12s;margin:0;flex:none}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--muted);transition:transform .12s,background-color .12s}
+.switch:checked{background:var(--ink);border-color:var(--ink)}
+.switch:checked::after{transform:translateX(20px);background:var(--bg)}
 .actions{display:flex;gap:10px;padding-top:14px;border-top:1px solid var(--line)}
-.actions button{flex:1;height:42px;border-radius:11px;background:var(--panel2);border:1px solid var(--line);font-size:14px;font-weight:600}
-.hint{color:var(--muted);font-size:12.5px;line-height:1.5;margin:14px 0 0}
-.hint b{color:var(--text);font-weight:600}
+.actions .btn{flex:1;padding:0 8px}
+.help{color:var(--muted);font-size:13px;line-height:1.5;margin:14px 0 0}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
 <div id="app">
   <header>
-    <div class="brand">
-      <svg viewBox="0 0 32 32" aria-hidden="true"><g fill="#5ef0c1"><rect x="4" y="16" width="4" height="12" rx="2"/><rect x="11" y="8" width="4" height="20" rx="2"/><rect x="18" y="3" width="4" height="25" rx="2"/><rect x="25" y="13" width="4" height="15" rx="2"/></g></svg>
-      Spectrum
-    </div>
     <nav id="tabs" role="tablist" aria-label="Graph type">
       <button role="tab" data-view="spectrum">Spectrum</button>
       <button role="tab" data-view="bars">Bars</button>
@@ -156,11 +163,14 @@ input[type=range]{width:150px;accent-color:var(--accent)}
       <button role="tab" data-view="scope">Scope</button>
       <button role="tab" data-view="3d">3D</button>
     </nav>
-    <div class="readout" aria-label="Loudest frequency">
-      <div><b id="readF">—</b><small>Peak</small></div>
-      <div><b id="readN">—</b><small>Note</small></div>
-      <div><b id="readD">—</b><small>Level</small></div>
+    <div class="readout" aria-label="Loudest frequency right now">
+      <span><b class="main" id="readF">—</b></span>
+      <span><small>note</small><b id="readN">—</b></span>
+      <span class="lvl"><small>level</small><b id="readD">—</b></span>
     </div>
+    <button id="btnTheme" class="icon-btn" aria-pressed="false" aria-label="Switch to dark mode">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 3.75a8.25 8.25 0 0 1 0 16.5z" fill="currentColor"/></svg>
+    </button>
   </header>
 
   <main id="plot">
@@ -169,72 +179,56 @@ input[type=range]{width:150px;accent-color:var(--accent)}
 
     <div id="zoomer" aria-label="Zoom">
       <span title="Horizontal axis">X</span><button data-z="x-" aria-label="Zoom out horizontally">−</button><button data-z="x+" aria-label="Zoom in horizontally">+</button>
-      <span title="Vertical axis">Y</span><button data-z="y-" aria-label="Zoom out vertically">−</button><button data-z="y+" aria-label="Zoom in vertically">+</button>
-      <button data-z="r">Reset</button>
+      <span class="y" title="Vertical axis">Y</span><button data-z="y-" aria-label="Zoom out vertically">−</button><button data-z="y+" aria-label="Zoom in vertically">+</button>
+      <button data-z="r">Reset view</button>
     </div>
 
     <div id="intro">
-      <div class="card">
-        <h1>What should we listen to?</h1>
-        <p>Pick a sound source to start the analyzer.</p>
-        <button class="src primary" data-src="mic">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
-          <div><b>Microphone</b><span>Analyze the room around you</span></div>
-        </button>
-        <button class="src" data-src="file">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>
-          <div><b>Audio file</b><span>Play and analyze a song or recording</span></div>
-        </button>
-        <button class="src" data-src="demo">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12c2.5-8 5-8 7.5 0s5 8 7.5 0 2.5-4 5-4"/></svg>
-          <div><b>Demo signal</b><span>Silent test tones, no permission needed</span></div>
-        </button>
-        <p class="fine">Sound is analyzed on this device and never uploaded.</p>
+      <div class="pick">
+        <h1>Choose an input</h1>
+        <button class="btn btn--primary" data-src="mic">Use the microphone<span>Live sound around this device</span></button>
+        <button class="btn" data-src="file">Open an audio file<span>Plays the recording while it is analyzed</span></button>
+        <button class="btn" data-src="demo">Run a test signal<span>A sweep and two tones. Silent, no permission needed.</span></button>
+        <p>Audio is analyzed on this device. Nothing is uploaded.</p>
       </div>
     </div>
 
     <div id="zeroOverlay" hidden role="status">
-      <div class="top"><span>Learning background</span><b id="zeroCount">3</b></div>
-      <small>Stay quiet. Whatever is heard now gets removed.</small>
+      <div class="top"><span>Measuring the background</span><b id="zeroCount">3</b></div>
+      <small>Keep quiet. What is heard now gets subtracted.</small>
       <div class="track"><div id="zeroBar"></div></div>
     </div>
     <div id="toast" role="status"></div>
   </main>
 
-  <footer id="bar">
-    <button id="btnPlay">
-      <svg id="icoPlay" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z"/></svg>
-      <svg id="icoPause" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></svg>
-      <span id="playLabel">Start</span>
-    </button>
-    <button id="btnZero" aria-pressed="false" title="Listen for 3 seconds, then remove that background from the graphs">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M6 18 18 6"/></svg>
-      <span id="zeroLabel">Zero</span>
-    </button>
-    <button id="btnSettings" aria-label="Settings">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
+  <footer id="bar" hidden>
+    <button id="btnZero" class="btn" aria-pressed="false" title="Listens for 3 seconds, then subtracts that background from the graphs">Zero background</button>
+    <button id="btnPlay" class="btn btn--primary">Pause</button>
+    <button id="btnSettings" class="icon-btn" aria-label="Open settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.5"/><circle cx="8" cy="17" r="2.5"/></svg>
     </button>
   </footer>
 </div>
 
 <div id="backdrop" hidden></div>
 <aside id="sheet" hidden aria-label="Settings">
-  <div class="sheet-head"><h2>Settings</h2><button id="sheetClose" aria-label="Close settings">✕</button></div>
-  <div class="row"><span class="lbl">Input</span>
-    <div class="seg" data-seg="source"><button data-val="mic">Mic</button><button data-val="file">File</button><button data-val="demo">Demo</button></div></div>
-  <div class="row"><span class="lbl">Frequency scale</span>
+  <div class="sheet-head"><h2>Settings</h2>
+    <button id="sheetClose" class="icon-btn" aria-label="Close settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="row"><span>Input</span>
+    <div class="seg" data-seg="source"><button data-val="mic">Mic</button><button data-val="file">File</button><button data-val="demo">Test</button></div></div>
+  <div class="row"><span>Frequency scale</span>
     <div class="seg" data-seg="scale"><button data-val="log">Log</button><button data-val="lin">Linear</button></div></div>
-  <div class="row"><label for="fft">Detail<small id="fftHint"></small></label>
+  <div class="row"><label for="fft">Frequency detail<small id="fftHint"></small></label>
     <select id="fft">
-      <option value="1024">Fast (1024)</option><option value="2048">2048</option><option value="4096">Balanced (4096)</option>
-      <option value="8192">8192</option><option value="16384">Fine (16384)</option><option value="32768">Finest (32768)</option>
+      <option value="1024">1024, fastest</option><option value="2048">2048</option><option value="4096">4096</option>
+      <option value="8192">8192</option><option value="16384">16384</option><option value="32768">32768, finest</option>
     </select></div>
   <div class="row"><label for="smooth">Smoothing</label><input type="range" id="smooth" min="0" max="0.95" step="0.05"></div>
-  <div class="row"><label for="hold">Peak hold<small>Faint line that remembers recent highs</small></label><input type="checkbox" class="switch" id="hold"></div>
-  <div class="row stack"><span class="lbl">Colors</span>
-    <div class="seg" data-seg="lut"><button data-val="aurora">Aurora</button><button data-val="viridis">Viridis</button><button data-val="ice">Ice</button><button data-val="mono">Mono</button></div></div>
-  <div class="actions"><button id="btnSnap">Save image</button><button id="btnFull">Fullscreen</button></div>
-  <p class="hint"><b>Zoom:</b> pinch sideways or scroll for frequency, pinch up-down or Shift+scroll for level. Drag to pan, double-tap to reset. Tap the graph to read a frequency.</p>
+  <div class="row"><label for="hold">Peak hold<small>A second line that keeps recent highs</small></label><input type="checkbox" class="switch" id="hold"></div>
+  <div class="row"><span>Heat colors<small>Waterfall and 3D</small></span>
+    <div class="seg" data-seg="lut"><button data-val="ember">Ember</button><button data-val="sea">Sea</button><button data-val="ink">Ink</button></div></div>
+  <div class="actions"><button id="btnSnap" class="btn">Save image</button><button id="btnFull" class="btn">Go fullscreen</button></div>
+  <p class="help">Pinch sideways or scroll to zoom frequency. Pinch up and down, or Shift+scroll, to zoom level. Drag to pan. Double-tap to reset. Tap the graph to read a frequency.</p>
 </aside>
 <input type="file" id="fileInput" accept="audio/*" hidden>
 
