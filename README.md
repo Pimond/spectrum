@@ -12,7 +12,7 @@ Live audio spectrum analyzer that runs entirely in the browser. No build step, n
 - Independent zoom on each axis: pinch sideways / scroll for frequency, pinch vertically / Shift+scroll for level, drag to pan, double-tap to reset
 - **Zero**: listens for 3 seconds, then subtracts that background from every graph for the rest of the session
 - Peak frequency, musical note and level readout; tap the graph to read any frequency
-- Log or linear frequency scale, FFT size 1024–32768, smoothing, peak hold, three heat color maps, PNG export
+- Log or linear frequency scale, FFT size 1024–32768, smoothing, peak hold, four color maps, PNG export
 
 Keyboard: `Space` pause, `1`–`5` views, `Z` zero, `0` reset zoom.
 

@@ -36,15 +36,18 @@
     ctx.fillText('dB', R.x - 6, R.y - 4); ctx.globalAlpha = 1;
   }
 
-  let gradKey = '', gradFill = null;
+  let gradKey = '', gradFill = null, gradLine = null;
   function grads(ctx, S, R) {
-    const key = S.theme.id + '|' + R.y + '|' + R.h;
+    const key = S.lutName + '|' + S.theme.id + '|' + R.y + '|' + R.h;
     if (key === gradKey) return;
     gradKey = key;
-    const a = S.theme.accentRGB;
     gradFill = ctx.createLinearGradient(0, R.y, 0, R.y + R.h);
-    gradFill.addColorStop(0, `rgba(${a[0]},${a[1]},${a[2]},0.30)`);
-    gradFill.addColorStop(1, `rgba(${a[0]},${a[1]},${a[2]},0.03)`);
+    gradLine = ctx.createLinearGradient(0, R.y, 0, R.y + R.h);
+    for (let i = 0; i <= 8; i++) {
+      const t = i / 8, k = Math.round(255 * (1 - t * 0.62)) * 4, L = S.lut8;
+      gradLine.addColorStop(t, `rgb(${L[k]},${L[k + 1]},${L[k + 2]})`);
+      gradFill.addColorStop(t, `rgba(${L[k]},${L[k + 1]},${L[k + 2]},${(0.5 * (1 - t) + 0.04).toFixed(3)})`);
+    }
   }
 
   let edges = null, colv = null;
@@ -72,17 +75,17 @@
     ctx.save(); ctx.beginPath(); ctx.rect(R.x, R.y, R.w, R.h); ctx.clip();
     SA.resample(S.spec, edges, colv);
     trace(ctx, S, R, n, true); ctx.fillStyle = gradFill; ctx.fill();
-    trace(ctx, S, R, n, false); ctx.strokeStyle = S.theme.ink; ctx.lineWidth = 1.5; ctx.lineJoin = 'round'; ctx.stroke();
+    trace(ctx, S, R, n, false); ctx.strokeStyle = gradLine; ctx.lineWidth = 1.5; ctx.lineJoin = 'round'; ctx.stroke();
     if (S.peakHold) {
       SA.resample(S.peak, edges, colv);
-      trace(ctx, S, R, n, false); ctx.strokeStyle = S.theme.accent; ctx.lineWidth = 1; ctx.stroke();
+      trace(ctx, S, R, n, false); ctx.strokeStyle = S.theme.muted; ctx.lineWidth = 1; ctx.stroke();
     }
     ctx.restore();
   };
 
   /* ---------- Bars (1/3 octave) ---------- */
   V.bars = (ctx, S, R) => {
-    freqAxis(ctx, S, R, false); dbAxis(ctx, S, R);
+    freqAxis(ctx, S, R, false); dbAxis(ctx, S, R); grads(ctx, S, R);
     const bottom = R.y + R.h;
     ctx.save(); ctx.beginPath(); ctx.rect(R.x, R.y, R.w, R.h); ctx.clip();
     for (let i = 0; i < S.bands.length; i++) {
@@ -90,7 +93,7 @@
       if (t1 <= 0 || t0 >= 1) continue;
       const x0 = R.x + t0 * R.w, x1 = R.x + t1 * R.w, gap = Math.min(3, (x1 - x0) * 0.18);
       const y = yOf(S.bandDb[i], S, R);
-      if (y < bottom) { ctx.fillStyle = S.theme.accent; ctx.globalAlpha = 1; ctx.fillRect(x0 + gap / 2, y, x1 - x0 - gap, bottom - y); }
+      if (y < bottom) { ctx.fillStyle = gradLine; ctx.globalAlpha = 1; ctx.fillRect(x0 + gap / 2, y, x1 - x0 - gap, bottom - y); }
       const yp = yOf(S.bandPeak[i], S, R);
       if (yp < bottom) { ctx.globalAlpha = 1; ctx.fillStyle = S.theme.ink; ctx.fillRect(x0 + gap / 2, yp - 1, x1 - x0 - gap, 2); }
     }
@@ -191,7 +194,8 @@
         ctx.moveTo(x, mid - hi * ky); ctx.lineTo(x, mid - lo * ky + 0.5);
       }
     }
-    ctx.strokeStyle = S.theme.ink; ctx.lineWidth = 1.5; ctx.lineJoin = 'round'; ctx.stroke();
+    const L = S.lut8, k = 190 * 4;
+    ctx.strokeStyle = `rgb(${L[k]},${L[k + 1]},${L[k + 2]})`; ctx.lineWidth = 1.5; ctx.lineJoin = 'round'; ctx.stroke();
     ctx.restore();
   };
 

@@ -26,7 +26,7 @@
     fftSize: [1024, 2048, 4096, 8192, 16384, 32768].includes(prefs.fft) ? prefs.fft : 4096,
     smooth: typeof prefs.smooth === 'number' ? SA.clamp(prefs.smooth, 0, 0.95) : 0.7,
     peakHold: !!prefs.hold,
-    lutName: SA.MAPS[prefs.lut] ? prefs.lut : 'ember',
+    lutName: SA.MAPS[prefs.lut] ? prefs.lut : 'aurora',
     lut8: null, lut32: null,
     sampleRate: 48000, nyq: 24000, binHz: 48000 / 4096,
     spec: null, peak: null, pw: null, time: null,

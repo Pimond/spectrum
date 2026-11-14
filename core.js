@@ -205,19 +205,23 @@
   /* ---------- colormaps ---------- */
   /* Each map runs from the page ground (first stop, filled in at build time) to its loudest colour. */
   SA.MAPS = {
-    ember: {
-      light: [[0, null], [0.35, '#f1d9ae'], [0.6, '#ec8f33'], [0.8, '#c63a17'], [1, '#2b0d07']],
-      dark: [[0, null], [0.25, '#4a1408'], [0.5, '#c63a17'], [0.75, '#f59e2c'], [1, '#fff1c9']],
+    aurora: {
+      light: [[0, null], [0.2, '#ffe9b0'], [0.4, '#ff9a4a'], [0.6, '#d6336c'], [0.8, '#6a1b9a'], [1, '#150f4d']],
+      dark: [[0, null], [0.18, '#1a1260'], [0.4, '#6a1b9a'], [0.6, '#d6336c'], [0.8, '#ff8a3d'], [1, '#fff3b0']],
     },
-    sea: {
-      light: [[0, null], [0.35, '#c9e6db'], [0.6, '#3fa59b'], [0.8, '#155f7a'], [1, '#0a1c36']],
-      dark: [[0, null], [0.25, '#0c3346'], [0.5, '#1a8a8a'], [0.75, '#7fd6b0'], [1, '#f3fbe2']],
+    viridis: {
+      light: [[0, null], [0.2, '#e8e04a'], [0.42, '#5ec962'], [0.62, '#21918c'], [0.82, '#3b528b'], [1, '#440154']],
+      dark: [[0, null], [0.15, '#440154'], [0.38, '#3b528b'], [0.6, '#21918c'], [0.8, '#5ec962'], [1, '#fde725']],
     },
-    ink: { light: [[0, null], [1, '#16181a']], dark: [[0, null], [1, '#ecebe7']] },
+    ice: {
+      light: [[0, null], [0.25, '#bfeaf2'], [0.5, '#38a8dc'], [0.75, '#0f4fa8'], [1, '#06153d']],
+      dark: [[0, null], [0.25, '#0b2a6b'], [0.5, '#1479c9'], [0.75, '#4fd6e8'], [1, '#f2fdff']],
+    },
+    mono: { light: [[0, null], [1, '#16181a']], dark: [[0, null], [1, '#ecebe7']] },
   };
   const hex = (SA.hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]);
   SA.buildLut = (name, dark, bg) => {
-    const stops = (SA.MAPS[name] || SA.MAPS.ember)[dark ? 'dark' : 'light'].map((st) => [st[0], st[1] || bg]);
+    const stops = (SA.MAPS[name] || SA.MAPS.aurora)[dark ? 'dark' : 'light'].map((st) => [st[0], st[1] || bg]);
     const lut = new Uint8Array(256 * 4);
     let s = 0;
     for (let i = 0; i < 256; i++) {

@@ -136,7 +136,7 @@ header{display:flex;flex-wrap:wrap;align-items:center;column-gap:20px;padding:6p
 .row{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:60px;padding:8px 0;border-top:1px solid var(--line)}
 .row small{display:block;color:var(--muted);font-size:13px;margin-top:1px}
 .seg{display:flex;border:1px solid var(--line2);border-radius:var(--r-md);overflow:hidden;flex:none}
-.seg button{height:38px;padding:0 13px;border-radius:0;font-size:14px;font-weight:500;transition:background-color .12s}
+.seg button{height:38px;padding:0 11px;border-radius:0;font-size:14px;font-weight:500;transition:background-color .12s}
 .seg button+button{border-left:1px solid var(--line2)}
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
 @media (hover:hover){.seg button:not([aria-pressed="true"]):hover{background:var(--hover)}}
@@ -225,8 +225,8 @@ input[type=range]{width:150px;accent-color:var(--ink)}
     </select></div>
   <div class="row"><label for="smooth">Smoothing</label><input type="range" id="smooth" min="0" max="0.95" step="0.05"></div>
   <div class="row"><label for="hold">Peak hold<small>A second line that keeps recent highs</small></label><input type="checkbox" class="switch" id="hold"></div>
-  <div class="row"><span>Heat colors<small>Waterfall and 3D</small></span>
-    <div class="seg" data-seg="lut"><button data-val="ember">Ember</button><button data-val="sea">Sea</button><button data-val="ink">Ink</button></div></div>
+  <div class="row"><span>Colors</span>
+    <div class="seg" data-seg="lut"><button data-val="aurora">Aurora</button><button data-val="viridis">Viridis</button><button data-val="ice">Ice</button><button data-val="mono">Mono</button></div></div>
   <div class="actions"><button id="btnSnap" class="btn">Save image</button><button id="btnFull" class="btn">Go fullscreen</button></div>
   <p class="help">Pinch sideways or scroll to zoom frequency. Pinch up and down, or Shift+scroll, to zoom level. Drag to pan. Double-tap to reset. Tap the graph to read a frequency.</p>
 </aside>
