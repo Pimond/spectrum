@@ -33,6 +33,7 @@
     bands: [], bandDb: null, bandPeak: null,
     hist: { grid: GRID, rows: ROWS, data: new Float32Array(GRID * ROWS).fill(SA.DB_FLOOR), head: 0, count: 0, dt: 33, last: 0, g0: 10, g1: 24000, edges: new Float32Array(GRID + 1) },
     scope: { span: 2048, amp: 0.5 },
+    loop: true, muted: false,
     cam: { yaw: -0.55, pitch: 0.5, dist: 3.3 },
     cursor: null,
     source: null, running: false,
@@ -111,7 +112,7 @@
         audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }, video: false,
       });
     } catch (e) {
-      if (e && (e.name === 'NotAllowedError' || e.name === 'SecurityError')) throw new Error('Microphone is blocked. Allow it in the browser’s site settings, or try the demo.');
+      if (e && (e.name === 'NotAllowedError' || e.name === 'SecurityError')) throw new Error('Microphone is blocked. Allow it in the browser’s site settings.');
       if (e && (e.name === 'NotFoundError' || e.name === 'OverconstrainedError')) throw new Error('No microphone found on this device.');
       throw new Error('Could not open the microphone.');
     }
@@ -119,46 +120,26 @@
     node.connect(analyser);
     return { stop() { node.disconnect(); stream.getTracks().forEach((t) => t.stop()); } };
   }
+  let media = null, mediaGain = null; // <audio> element and its output gain while a file plays
   async function fileSource(file) {
-    const buf = await file.arrayBuffer();
-    let audio;
+    const el = new Audio(), url = URL.createObjectURL(file);
+    el.preload = 'auto'; el.loop = S.loop; el.src = url;
     try {
-      audio = await new Promise((res, rej) => { const p = ctx.decodeAudioData(buf, res, rej); if (p && p.catch) p.catch(rej); });
-    } catch (e) { throw new Error('Could not read that file as audio.'); }
-    const node = ctx.createBufferSource();
-    node.buffer = audio; node.loop = true;
-    node.connect(analyser); node.connect(ctx.destination);
-    node.start();
-    return { stop() { try { node.stop(); } catch (e) {} node.disconnect(); } };
-  }
-  function demoSource() {
-    const out = ctx.createGain(); out.connect(analyser);
-    const nodes = [];
-    const osc = (type, f, gain) => {
-      const o = ctx.createOscillator(), gn = ctx.createGain();
-      o.type = type; o.frequency.value = f; gn.gain.value = gain;
-      o.connect(gn); gn.connect(out); o.start(); nodes.push(o);
-      return o;
-    };
-    const sweep = osc('sine', 120, 0.22);
-    osc('sawtooth', 220, 0.05);
-    osc('sine', 1000, 0.1);
-    const nb = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate), d = nb.getChannelData(0);
-    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-    const noise = ctx.createBufferSource(), lp = ctx.createBiquadFilter(), ng = ctx.createGain();
-    noise.buffer = nb; noise.loop = true; lp.type = 'lowpass'; lp.frequency.value = 2500; ng.gain.value = 0.03;
-    noise.connect(lp); lp.connect(ng); ng.connect(out); noise.start(); nodes.push(noise);
-    let next = ctx.currentTime;
+      await new Promise((res, rej) => {
+        el.addEventListener('loadedmetadata', res, { once: true });
+        el.addEventListener('error', rej, { once: true });
+      });
+    } catch (e) { URL.revokeObjectURL(url); throw new Error('Could not read that file as audio.'); }
+    const node = ctx.createMediaElementSource(el), out = ctx.createGain();
+    out.gain.value = S.muted ? 0 : 1;
+    node.connect(analyser); node.connect(out); out.connect(ctx.destination);
+    media = el; mediaGain = out;
+    el.play().catch(() => {});
     return {
-      tick() {
-        while (next < ctx.currentTime + 1) {
-          sweep.frequency.setValueAtTime(120, next);
-          sweep.frequency.exponentialRampToValueAtTime(9000, next + 4);
-          sweep.frequency.exponentialRampToValueAtTime(120, next + 8);
-          next += 8;
-        }
+      stop() {
+        el.pause(); node.disconnect(); out.disconnect(); URL.revokeObjectURL(url);
+        if (media === el) { media = null; mediaGain = null; }
       },
-      stop() { nodes.forEach((n) => { try { n.stop(); } catch (e) {} }); out.disconnect(); },
     };
   }
 
@@ -169,7 +150,7 @@
     try {
       const ready = ensureCtx(); // must run inside the tap, before any await (Safari)
       await ready;
-      const next = kind === 'mic' ? await micSource() : kind === 'file' ? await fileSource(file) : demoSource();
+      const next = kind === 'mic' ? await micSource() : await fileSource(file);
       stopSource();
       src = next;
       if (ctx.state !== 'running') await ctx.resume().catch(() => {});
@@ -178,7 +159,6 @@
       S.source = kind; S.running = true;
       $('intro').hidden = true;
       closeSheet();
-      if (S.mode === '3d') hint3d();
     } catch (e) {
       toast(e.message || 'Something went wrong.', 4500);
       if (!S.source) $('intro').hidden = false;
@@ -189,6 +169,7 @@
   }
   function togglePlay() {
     if (!S.source) { $('intro').hidden = false; return; }
+    if (media) { if (media.paused) media.play().catch(() => {}); else media.pause(); return; } // frame() syncs state
     if (S.running) { S.running = false; if (S.zero) clearZero(true); ctx.suspend && ctx.suspend(); }
     else { S.running = true; ctx.resume(); }
     ui();
@@ -225,7 +206,6 @@
     S.noise = noise; S.zero = null;
     S.peak.fill(SA.DB_FLOOR); S.bandPeak.fill(SA.DB_FLOOR);
     $('zeroOverlay').hidden = true;
-    toast('Background removed from the graphs.', 2600);
     ui();
   }
 
@@ -233,7 +213,6 @@
   let lastRead = 0, lastT = 0;
   function process(now) {
     if (ctx.sampleRate !== S.sampleRate) rateChanged(ctx.sampleRate);
-    if (src && src.tick) src.tick();
     const n = raw.length, z = S.zero, noise = S.noise, spec = S.spec, peak = S.peak, pw = S.pw;
     analyser.getFloatFrequencyData(raw);
     const dt = Math.min(0.1, (now - lastT) / 1000 || 0.016); lastT = now;
@@ -302,8 +281,22 @@
     if (S.mode === '3d') V.three(g2, S, dpr, cgl, W, Hh);
     else { V[S.mode](g2, S, R, dpr); V.cursor(g2, S, R); }
   }
+  const fmtT = (t) => { t = Math.max(0, Math.floor(t || 0)); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
+  let scrubbing = false, lastSec = -1, lastDur = -1;
+  function transport() {
+    const playing = !media.paused && !media.ended;
+    if (playing !== S.running) { S.running = playing; if (!playing && S.zero) clearZero(true); ui(); }
+    const dur = isFinite(media.duration) ? media.duration : 0, seek = $('seek');
+    if (dur !== lastDur) { lastDur = dur; seek.max = String(dur || 1); $('tDur').textContent = fmtT(dur); }
+    if (!scrubbing) {
+      seek.value = String(media.currentTime);
+      const sec = Math.floor(media.currentTime);
+      if (sec !== lastSec) { lastSec = sec; $('tCur').textContent = fmtT(sec); }
+    }
+  }
   function frame(now) {
     requestAnimationFrame(frame);
+    if (media) transport();
     if (S.running && analyser) process(now);
     draw();
     if (snapWanted) { snapWanted = false; snapshot(); }
@@ -453,6 +446,9 @@
     document.querySelectorAll('#tabs button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.view === S.mode)));
     cgl.style.display = S.mode === '3d' ? 'block' : 'none';
     $('bar').hidden = !S.source;
+    $('transport').hidden = S.source !== 'file';
+    $('btnLoop').setAttribute('aria-pressed', String(S.loop));
+    $('btnMute').setAttribute('aria-pressed', String(S.muted));
     $('btnPlay').textContent = S.running ? 'Pause' : 'Resume';
     const zb = $('btnZero');
     zb.classList.toggle('on', !!S.noise); zb.disabled = !!S.zero;
@@ -463,16 +459,9 @@
     tb.setAttribute('aria-label', S.dark ? 'Switch to light mode' : 'Switch to dark mode');
     seg('source', S.source || ''); seg('scale', S.view.log ? 'log' : 'lin'); seg('lut', S.lutName);
     $('fft').value = String(S.fftSize); $('smooth').value = String(S.smooth); $('hold').checked = S.peakHold;
-    $('fftHint').textContent = '≈ ' + (S.binHz >= 10 ? S.binHz.toFixed(0) : S.binHz.toFixed(1)) + ' Hz per step';
-  }
-  function hint3d() {
-    if (hint3d.done) return;
-    hint3d.done = true;
-    toast('Drag to rotate. Pinch or scroll to move closer.', 3200);
   }
   function setMode(m) {
     S.mode = m; S.cursor = null;
-    if (m === '3d' && S.source) hint3d();
     save(); ui();
   }
   function openSheet() { $('sheet').hidden = false; $('backdrop').hidden = false; requestAnimationFrame(() => document.body.classList.add('sheet-open')); }
@@ -496,6 +485,13 @@
   document.querySelector('[data-seg="source"]').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) choose(b.dataset.val); });
   document.querySelector('[data-seg="scale"]').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) setLog(b.dataset.val === 'log'); });
   document.querySelector('[data-seg="lut"]').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { setLut(b.dataset.val); save(); ui(); } });
+  $('seek').addEventListener('input', (e) => {
+    scrubbing = true;
+    if (media) { media.currentTime = +e.target.value; $('tCur').textContent = fmtT(+e.target.value); lastSec = -1; }
+  });
+  $('seek').addEventListener('change', () => { scrubbing = false; });
+  $('btnLoop').addEventListener('click', () => { S.loop = !S.loop; if (media) media.loop = S.loop; ui(); });
+  $('btnMute').addEventListener('click', () => { S.muted = !S.muted; if (mediaGain) mediaGain.gain.value = S.muted ? 0 : 1; ui(); });
   $('fft').addEventListener('change', (e) => setFft(+e.target.value));
   $('smooth').addEventListener('input', (e) => { S.smooth = +e.target.value; save(); });
   $('hold').addEventListener('change', (e) => { S.peakHold = e.target.checked; S.peak.fill(SA.DB_FLOOR); save(); });

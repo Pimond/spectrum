@@ -61,7 +61,6 @@ header{display:flex;flex-wrap:wrap;align-items:center;column-gap:20px;padding:6p
 .readout{flex:1 1 0;overflow:hidden;display:flex;align-items:baseline;gap:16px;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap;min-width:0}
 .readout span{display:flex;align-items:baseline;gap:6px;font-size:13px}
 .readout b{font-weight:500}
-.readout small{font-family:var(--sans);font-size:12px;color:var(--muted)}
 .readout .main{font-size:21px;letter-spacing:-.01em}
 #btnTheme{margin-right:-10px}
 #tabs{order:3;flex:1 0 100%;display:flex;gap:4px;margin:0 -8px}
@@ -69,7 +68,6 @@ header{display:flex;flex-wrap:wrap;align-items:center;column-gap:20px;padding:6p
   box-shadow:inset 0 -2px 0 transparent;transition:color .12s,box-shadow .12s}
 #tabs button[aria-selected="true"]{color:var(--ink);box-shadow:inset 0 -2px 0 var(--ink)}
 @media (hover:hover){#tabs button:hover{color:var(--ink)}}
-@media (max-width:819px){.readout small{display:none}}
 @media (max-width:360px){.readout .lvl{display:none}}
 @media (min-width:820px){
   :root{--edge:24px}
@@ -96,18 +94,14 @@ header{display:flex;flex-wrap:wrap;align-items:center;column-gap:20px;padding:6p
 @media (hover:hover){#zoomer button:hover{background:var(--hover);color:var(--ink)}}
 
 #intro{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:var(--edge);background:var(--veil)}
-.pick{width:min(360px,100%);background:var(--bg);border:1px solid var(--line2);border-radius:var(--r-lg);padding:20px}
-.pick h1{margin:0 0 14px;font-size:18px;font-weight:600;letter-spacing:-.01em}
-.pick .btn{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;width:100%;height:auto;min-height:58px;
-  padding:9px 14px;margin-top:8px;text-align:left;white-space:normal}
-.pick .btn span{font-size:13px;font-weight:400;opacity:.8;margin-top:1px}
-.pick p{margin:14px 0 0;font-size:13px;color:var(--muted);line-height:1.45}
+.pick{width:min(300px,100%);display:flex;flex-direction:column;gap:10px}
+.pick .btn{width:100%;height:52px;background-color:var(--bg)}
+.pick .btn--primary{background-color:var(--accent)}
 
 #zeroOverlay{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);width:min(320px,calc(100% - 2*var(--edge)));
   background:var(--bg);border:1px solid var(--line2);border-radius:var(--r-lg);padding:12px 14px;pointer-events:none}
-#zeroOverlay .top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-weight:600}
+#zeroOverlay .top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-weight:600;margin-bottom:10px}
 #zeroOverlay .top b{font-family:var(--mono);font-weight:500;font-size:18px}
-#zeroOverlay small{display:block;color:var(--muted);font-size:13px;margin:2px 0 10px}
 #zeroOverlay .track{height:3px;background:var(--line)}
 #zeroBar{height:100%;background:var(--accent);transform-origin:left;transform:scaleX(0)}
 
@@ -117,9 +111,15 @@ header{display:flex;flex-wrap:wrap;align-items:center;column-gap:20px;padding:6p
 #toast.on{opacity:1;transform:translate(-50%,0)}
 
 /* action bar */
-#bar{display:flex;gap:10px;padding:10px var(--edge) calc(10px + var(--sb));border-top:1px solid var(--line)}
+#bar{padding:10px var(--edge) calc(10px + var(--sb));border-top:1px solid var(--line)}
+#bar .acts{display:flex;gap:10px}
 #bar .btn{flex:1;min-width:0;padding:0 10px}
-@media (min-width:820px){#bar{justify-content:flex-end}#bar .btn{flex:0 0 190px}}
+#transport{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums}
+#seek{flex:1;min-width:0;width:auto;height:var(--ctl);margin:0}
+.tog[aria-pressed="false"]{color:var(--muted)}
+.tog[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+@media (hover:hover){.tog[aria-pressed="true"]:hover{background:var(--ink)}}
+@media (min-width:820px){#bar{display:flex;align-items:center;gap:24px}#transport{flex:1;margin:0;max-width:640px}#bar .acts{margin-left:auto}#bar .btn{flex:0 0 190px}}
 
 /* settings */
 #backdrop{position:fixed;inset:0;background:rgba(0,0,0,.32);opacity:0;transition:opacity .18s;z-index:10}
@@ -134,7 +134,6 @@ header{display:flex;flex-wrap:wrap;align-items:center;column-gap:20px;padding:6p
 .sheet-head{display:flex;align-items:center;justify-content:space-between;padding:6px 0;margin-right:-10px}
 .sheet-head h2{margin:0;font-size:18px;font-weight:600;letter-spacing:-.01em}
 .row{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:60px;padding:8px 0;border-top:1px solid var(--line)}
-.row small{display:block;color:var(--muted);font-size:13px;margin-top:1px}
 .seg{display:flex;border:1px solid var(--line2);border-radius:var(--r-md);overflow:hidden;flex:none}
 .seg button{height:38px;padding:0 11px;border-radius:0;font-size:14px;font-weight:500;transition:background-color .12s}
 .seg button+button{border-left:1px solid var(--line2)}
@@ -149,7 +148,6 @@ input[type=range]{width:150px;accent-color:var(--ink)}
 .switch:checked::after{transform:translateX(20px);background:var(--bg)}
 .actions{display:flex;gap:10px;padding-top:14px;border-top:1px solid var(--line)}
 .actions .btn{flex:1;padding:0 8px}
-.help{color:var(--muted);font-size:13px;line-height:1.5;margin:14px 0 0}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -163,10 +161,10 @@ input[type=range]{width:150px;accent-color:var(--ink)}
       <button role="tab" data-view="scope">Scope</button>
       <button role="tab" data-view="3d">3D</button>
     </nav>
-    <div class="readout" aria-label="Loudest frequency right now">
+    <div class="readout">
       <span><b class="main" id="readF">—</b></span>
-      <span><small>note</small><b id="readN">—</b></span>
-      <span class="lvl"><small>level</small><b id="readD">—</b></span>
+      <span><b id="readN">—</b></span>
+      <span class="lvl"><b id="readD">—</b></span>
     </div>
     <button id="btnTheme" class="icon-btn" aria-pressed="false" aria-label="Switch to dark mode">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 3.75a8.25 8.25 0 0 1 0 16.5z" fill="currentColor"/></svg>
@@ -175,38 +173,47 @@ input[type=range]{width:150px;accent-color:var(--ink)}
 
   <main id="plot">
     <canvas id="cgl"></canvas>
-    <canvas id="c2d" aria-label="Live graph. Drag to pan, pinch or scroll to zoom."></canvas>
+    <canvas id="c2d"></canvas>
 
     <div id="zoomer" aria-label="Zoom">
-      <span title="Horizontal axis">X</span><button data-z="x-" aria-label="Zoom out horizontally">−</button><button data-z="x+" aria-label="Zoom in horizontally">+</button>
-      <span class="y" title="Vertical axis">Y</span><button data-z="y-" aria-label="Zoom out vertically">−</button><button data-z="y+" aria-label="Zoom in vertically">+</button>
-      <button data-z="r">Reset view</button>
+      <span>X</span><button data-z="x-" aria-label="Zoom out horizontally">−</button><button data-z="x+" aria-label="Zoom in horizontally">+</button>
+      <span class="y">Y</span><button data-z="y-" aria-label="Zoom out vertically">−</button><button data-z="y+" aria-label="Zoom in vertically">+</button>
+      <button data-z="r">Reset</button>
     </div>
 
     <div id="intro">
       <div class="pick">
-        <h1>Choose an input</h1>
-        <button class="btn btn--primary" data-src="mic">Use the microphone<span>Live sound around this device</span></button>
-        <button class="btn" data-src="file">Open an audio file<span>Plays the recording while it is analyzed</span></button>
-        <button class="btn" data-src="demo">Run a test signal<span>A sweep and two tones. Silent, no permission needed.</span></button>
-        <p>Audio is analyzed on this device. Nothing is uploaded.</p>
+        <button class="btn btn--primary" data-src="mic">Use the microphone</button>
+        <button class="btn" data-src="file">Open an audio file</button>
       </div>
     </div>
 
     <div id="zeroOverlay" hidden role="status">
       <div class="top"><span>Measuring the background</span><b id="zeroCount">3</b></div>
-      <small>Keep quiet. What is heard now gets subtracted.</small>
       <div class="track"><div id="zeroBar"></div></div>
     </div>
     <div id="toast" role="status"></div>
   </main>
 
   <footer id="bar" hidden>
-    <button id="btnZero" class="btn" aria-pressed="false" title="Listens for 3 seconds, then subtracts that background from the graphs">Zero background</button>
-    <button id="btnPlay" class="btn btn--primary">Pause</button>
-    <button id="btnSettings" class="icon-btn" aria-label="Open settings">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.5"/><circle cx="8" cy="17" r="2.5"/></svg>
-    </button>
+    <div id="transport" hidden>
+      <span id="tCur">0:00</span>
+      <input type="range" id="seek" min="0" max="1" step="0.01" value="0" aria-label="Seek">
+      <span id="tDur">0:00</span>
+      <button id="btnLoop" class="icon-btn tog" aria-pressed="true" aria-label="Loop">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3l3 3-3 3M20 6H8a4 4 0 0 0-4 4v1M7 21l-3-3 3-3M4 18h12a4 4 0 0 0 4-4v-1"/></svg>
+      </button>
+      <button id="btnMute" class="icon-btn tog" aria-pressed="false" aria-label="Mute">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5v5h3.5L12 18V6L7.5 9.5zM16 9l5 6M21 9l-5 6"/></svg>
+      </button>
+    </div>
+    <div class="acts">
+      <button id="btnZero" class="btn" aria-pressed="false">Zero background</button>
+      <button id="btnPlay" class="btn btn--primary">Pause</button>
+      <button id="btnSettings" class="icon-btn" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.5"/><circle cx="8" cy="17" r="2.5"/></svg>
+      </button>
+    </div>
   </footer>
 </div>
 
@@ -215,20 +222,19 @@ input[type=range]{width:150px;accent-color:var(--ink)}
   <div class="sheet-head"><h2>Settings</h2>
     <button id="sheetClose" class="icon-btn" aria-label="Close settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
   <div class="row"><span>Input</span>
-    <div class="seg" data-seg="source"><button data-val="mic">Mic</button><button data-val="file">File</button><button data-val="demo">Test</button></div></div>
+    <div class="seg" data-seg="source"><button data-val="mic">Mic</button><button data-val="file">File</button></div></div>
   <div class="row"><span>Frequency scale</span>
     <div class="seg" data-seg="scale"><button data-val="log">Log</button><button data-val="lin">Linear</button></div></div>
-  <div class="row"><label for="fft">Frequency detail<small id="fftHint"></small></label>
+  <div class="row"><label for="fft">FFT size</label>
     <select id="fft">
-      <option value="1024">1024, fastest</option><option value="2048">2048</option><option value="4096">4096</option>
-      <option value="8192">8192</option><option value="16384">16384</option><option value="32768">32768, finest</option>
+      <option value="1024">1024</option><option value="2048">2048</option><option value="4096">4096</option>
+      <option value="8192">8192</option><option value="16384">16384</option><option value="32768">32768</option>
     </select></div>
   <div class="row"><label for="smooth">Smoothing</label><input type="range" id="smooth" min="0" max="0.95" step="0.05"></div>
-  <div class="row"><label for="hold">Peak hold<small>A second line that keeps recent highs</small></label><input type="checkbox" class="switch" id="hold"></div>
+  <div class="row"><label for="hold">Peak hold</label><input type="checkbox" class="switch" id="hold"></div>
   <div class="row"><span>Colors</span>
     <div class="seg" data-seg="lut"><button data-val="aurora">Aurora</button><button data-val="viridis">Viridis</button><button data-val="ice">Ice</button><button data-val="mono">Mono</button></div></div>
-  <div class="actions"><button id="btnSnap" class="btn">Save image</button><button id="btnFull" class="btn">Go fullscreen</button></div>
-  <p class="help">Pinch sideways or scroll to zoom frequency. Pinch up and down, or Shift+scroll, to zoom level. Drag to pan. Double-tap to reset. Tap the graph to read a frequency.</p>
+  <div class="actions"><button id="btnSnap" class="btn">Save image</button><button id="btnFull" class="btn">Fullscreen</button></div>
 </aside>
 <input type="file" id="fileInput" accept="audio/*" hidden>
 

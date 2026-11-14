@@ -8,7 +8,7 @@ Live audio spectrum analyzer that runs entirely in the browser. No build step, n
 
 - Five views: 3D surface (default), spectrum, 1/3-octave bars, waterfall (spectrogram) and scope
 - Light theme by default, dark theme toggle in the header
-- Sources: microphone, audio file, or a silent demo signal
+- Sources: microphone or an audio file with scrubber, loop and mute
 - Independent zoom on each axis: pinch sideways / scroll for frequency, pinch vertically / Shift+scroll for level, drag to pan, double-tap to reset
 - **Zero**: listens for 3 seconds, then subtracts that background from every graph for the rest of the session
 - Peak frequency, musical note and level readout; tap the graph to read any frequency
